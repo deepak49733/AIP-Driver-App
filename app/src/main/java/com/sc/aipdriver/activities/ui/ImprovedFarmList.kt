@@ -474,11 +474,24 @@ class ImprovedFarmList : AppCompatActivity(), OnImprovedItemClick, OnClickImprov
                             updatedRouteId = pData.routeId
                             sharedprefrenceManager!!.setRouteId(updatedRouteId)
                             parentIdd = pData.getParentId()
-                            farmIdd = pData.getFarmId()
+                            val pFarmId = pData.getFarmId()
+                            if (pFarmId != 0) {
+                                farmIdd = pFarmId
+                                sharedprefrenceManager!!.setFID(farmIdd.toString())
+                            } else if (rideIdd != 0) {
+                                val savedFid = sharedprefrenceManager!!.getFID().toIntOrNull() ?: 0
+                                if (savedFid != 0) {
+                                    farmIdd = savedFid
+                                }
+                            } else {
+                                farmIdd = 0
+                            }
                             actionn = pData.getAction()
                             farmnamee = pData.getFarmName()
                             routeNamee = pData.getRouteName()
-                            sharedprefrenceManager!!.setIsPause(pData.getIsPaused())
+                            if (pData.getIsPaused() == 1) {
+                                sharedprefrenceManager!!.setIsPause(1)
+                            }
                             if (!pData.orderDate.isEmpty()) {
                                 val formattedDate =
                                     FarmListRoute.formatToMMDDYYYY(pData.getOrderDate())
@@ -492,7 +505,7 @@ class ImprovedFarmList : AppCompatActivity(), OnImprovedItemClick, OnClickImprov
                                 isResume = false
                             } else if (rideIdd != 0 && farmIdd == 0) {
                                 isResume = false
-                            } else if (rideIdd != 0 && farmIdd != 0 && actionn == 1) {
+                            } else if (rideIdd != 0 && farmIdd != 0) {
                                 isResume = true
                                 Executors.newSingleThreadExecutor().execute {
                                     val db = AppDatabase.getDatabase(this@ImprovedFarmList)
@@ -510,8 +523,6 @@ class ImprovedFarmList : AppCompatActivity(), OnImprovedItemClick, OnClickImprov
                                         improvedAdapter?.notifyDataSetChanged()
                                     }
                                 }
-                            } else if (rideIdd != 0 && farmIdd != 0 && actionn == 0) {
-                                isResume = false
                             } else {
                             }
 
@@ -2016,6 +2027,27 @@ class ImprovedFarmList : AppCompatActivity(), OnImprovedItemClick, OnClickImprov
                             .stream()
                             .filter { farm: ImprovedPriorityFarmData? -> farm!!.getRemove() == 0 }
                             .collect(Collectors.toList())
+
+                        val rideIdStr = sharedprefrenceManager?.getRideId() ?: "0"
+                        val isRideActive = (rideIdd != 0) || (rideIdStr != "0" && rideIdStr != "" && rideIdStr != "null")
+
+                        if (isRideActive) {
+                            val activeFid = if (farmIdd != 0) farmIdd else sharedprefrenceManager?.getFID()?.toIntOrNull() ?: 0
+                            if (activeFid != 0) {
+                                farms.forEach { farm ->
+                                    if (farm.id == activeFid) {
+                                        farm.setIsActiveRide(1)
+                                    } else {
+                                        farm.setIsActiveRide(0)
+                                    }
+                                }
+                            }
+                        } else {
+                            farms.forEach { farm ->
+                                farm.setIsActiveRide(0)
+                            }
+                        }
+
                         farmlist.clear()
                         farmlist.addAll(farms)
 
@@ -2065,6 +2097,14 @@ class ImprovedFarmList : AppCompatActivity(), OnImprovedItemClick, OnClickImprov
         Executors.newSingleThreadExecutor().execute(Runnable {
             val db = getDatabase(this@ImprovedFarmList)
             val dateToUse = if (orderDate.isNotEmpty()) orderDate else sharedprefrenceManager!!.getDate()
+
+            val rideIdStr = sharedprefrenceManager?.getRideId() ?: "0"
+            val isRideActive = (rideIdd != 0) || (rideIdStr != "0" && rideIdStr != "" && rideIdStr != "null")
+
+            if (!isRideActive) {
+                db.improvedPriorityFarmDao().resetActiveFarms(dateToUse)
+            }
+
             val offlineFarms =
                 db.improvedPriorityFarmDao().getFarmsByDate(dateToUse)
             runOnUiThread(Runnable {

@@ -136,19 +136,60 @@ class SyncWorker(
             }
 
             /** ---------------------------------------------------------
-             * ✅ STEP 3: SYNC RIDE FINISH PHOTOS & DATA
+             * ✅ STEP 3: SYNC RIDE FINISH DATA FIRST, THEN PHOTOS
              * --------------------------------------------------------- */
+            // 3A: Send Ride Finish Data first so backend registers completion, bags, temp, comments & timestamp
+            val pendingFinish = db.rideFinishDao().getPending()
+            for (entity in pendingFinish) {
+                var rideIdToUse = entity.rideId
+                if (rideIdToUse.startsWith("OFF_") || rideIdToUse == "0" || rideIdToUse.isEmpty()) {
+                    val firmIdInt = entity.firmId?.toIntOrNull() ?: 0
+                    if (firmIdInt != 0) {
+                        val farm = db.improvedPriorityFarmDao().getFarmByIdAndDate(firmIdInt, com.sc.aipdriver.activities.ui.FarmListRoute.formatToMMDDYYYY(sharedPref.date))
+                        if (farm != null && !farm.rideId.startsWith("OFF_") && farm.rideId != "0" && farm.rideId.isNotEmpty()) {
+                            rideIdToUse = farm.rideId
+                        }
+                    }
+                }
+                if (rideIdToUse == "0" || rideIdToUse.isEmpty()) {
+                    Log.w("SyncWorker", "Skipping finish sync for firm ${entity.firmId}: rideId is 0 or empty")
+                    continue
+                }
+                val request = RideFinishRequest().apply {
+                    commentsDelivered = entity.comments; endDateTime = entity.EndDateTime; action = entity.action; rideId = rideIdToUse; uid = entity.uid; lat = entity.lat; lng = entity.lng; endOdometer = entity.endOdometer; totalMiles = entity.totalMiles; address = entity.address; state = entity.state; city = entity.city; country = entity.country; firmId = entity.firmId; bagsDelivered = entity.bagsDelivered; temperature = entity.temperature; routeId = entity.routeId; customerSeemanCoolarTemp = entity.coolerTemp
+                }
+                try {
+                    val res = apiService.rideFinish(request, entity.driverId, entity.Token).execute()
+                    if (res.isSuccessful) {
+                        db.rideFinishDao().markSynced(entity.localId)
+                        db.rideFinishDao().deleteById(entity.localId)
+                    } else {
+                        Log.e("SyncWorker", "rideFinish failed with code ${res.code()} for firm ${entity.firmId}")
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+
+            // 3B: Upload Farm End Photos for completed farms
             val rideIds = db.photoSyncDao().getPendingRideIds("FARM_END")
             for (rideId in rideIds) {
                 val photos = db.photoSyncDao().getPhotosByRide("FARM_END", rideId)
                 if (photos.isEmpty()) continue
                 var rideIdToUse = rideId
-                if (rideId.startsWith("OFF_")) {
+                if (rideId.startsWith("OFF_") || rideId == "0" || rideId.isEmpty()) {
                     val firmId = photos.first().farmId
                     if (!firmId.isNullOrEmpty()) {
-                        val farm = db.improvedPriorityFarmDao().getFarmByIdAndDate(firmId.toInt(), com.sc.aipdriver.activities.ui.FarmListRoute.formatToMMDDYYYY(sharedPref.date))
-                        if (farm != null && !farm.rideId.startsWith("OFF_") && farm.rideId != "0") rideIdToUse = farm.rideId
+                        val farm = db.improvedPriorityFarmDao().getFarmByIdAndDate(firmId.toIntOrNull() ?: 0, com.sc.aipdriver.activities.ui.FarmListRoute.formatToMMDDYYYY(sharedPref.date))
+                        if (farm != null && !farm.rideId.startsWith("OFF_") && farm.rideId != "0" && farm.rideId.isNotEmpty()) {
+                            rideIdToUse = farm.rideId
+                            db.photoSyncDao().updateRideId("FARM_END", rideId, rideIdToUse)
+                        }
                     }
+                }
+                if (rideIdToUse == "0" || rideIdToUse.isEmpty()) {
+                    Log.w("SyncWorker", "Skipping photo upload for farm ${photos.first().farmId}: rideId is 0 or empty")
+                    continue
                 }
                 var img1: MultipartBody.Part? = null
                 var img2: MultipartBody.Part? = null
@@ -163,40 +204,19 @@ class SyncWorker(
                         4 -> img4 = part
                     }
                 }
-                val res = apiService.uploadFarmEndImage(photos.first().Token ?: sharedPref.token, rideIdToUse, img1, img2, img3, img4).execute()
-                if (res.isSuccessful) {
-                    photos.forEach {
-                        db.photoSyncDao().markSynced(it.localId)
-                        db.photoSyncDao().deleteById(it.localId)
+                try {
+                    val res = apiService.uploadFarmEndImage(photos.first().Token ?: sharedPref.token, rideIdToUse, img1, img2, img3, img4).execute()
+                    if (res.isSuccessful) {
+                        photos.forEach {
+                            db.photoSyncDao().markSynced(it.localId)
+                            db.photoSyncDao().deleteById(it.localId)
+                        }
+                    } else {
+                        Log.e("SyncWorker", "uploadFarmEndImage failed with code ${res.code()} for ride $rideIdToUse")
                     }
-                } else {
-                    if (res.code() == 500) {
-                        SyncStatusManager.syncCompleted.postValue(true)
-                        SyncStatusManager.syncStarted.postValue(false)
-                        return Result.success()
-                    }
-                    return Result.retry()
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
-            }
-
-            val pendingFinish = db.rideFinishDao().getPending()
-            for (entity in pendingFinish) {
-                var rideIdToUse = entity.rideId
-                if (rideIdToUse.startsWith("OFF_")) {
-                    val firmIdInt = entity.firmId?.toIntOrNull() ?: 0
-                    if (firmIdInt != 0) {
-                        val farm = db.improvedPriorityFarmDao().getFarmByIdAndDate(firmIdInt, com.sc.aipdriver.activities.ui.FarmListRoute.formatToMMDDYYYY(sharedPref.date))
-                        if (farm != null && !farm.rideId.startsWith("OFF_") && farm.rideId != "0") rideIdToUse = farm.rideId
-                    }
-                }
-                val request = RideFinishRequest().apply {
-                    commentsDelivered = entity.comments; endDateTime = entity.EndDateTime; action = entity.action; rideId = rideIdToUse; uid = entity.uid; lat = entity.lat; lng = entity.lng; endOdometer = entity.endOdometer; totalMiles = entity.totalMiles; address = entity.address; state = entity.state; city = entity.city; country = entity.country; firmId = entity.firmId; bagsDelivered = entity.bagsDelivered; temperature = entity.temperature; routeId = entity.routeId; customerSeemanCoolarTemp = entity.coolerTemp
-                }
-                val res = apiService.rideFinish(request, entity.driverId, entity.Token).execute()
-                if (res.isSuccessful) {
-                    db.rideFinishDao().markSynced(entity.localId)
-                    db.rideFinishDao().deleteById(entity.localId)
-                } else return Result.retry()
             }
 
             /** ---------------------------------------------------------
@@ -211,13 +231,17 @@ class SyncWorker(
                     val json = gson.fromJson(entity.payload, JsonObject::class.java)
                     val firmId = json.get("FIRMID")?.asString?.trim() ?: ""
                     var rideId = json.get("rideId")?.asString?.trim() ?: ""
-                    val key = "$firmId-$rideId"
-                    if (rideId.startsWith("OFF_")) {
-                        val farm = db.improvedPriorityFarmDao().getFarmByIdAndDate(firmId.toInt(), com.sc.aipdriver.activities.ui.FarmListRoute.formatToMMDDYYYY(sharedPref.date))
-                        if (farm != null && !farm.rideId.startsWith("OFF_") && farm.rideId != "0") {
+                    if (rideId.startsWith("OFF_") || rideId == "0" || rideId.isEmpty()) {
+                        val farm = db.improvedPriorityFarmDao().getFarmByIdAndDate(firmId.toIntOrNull() ?: 0, com.sc.aipdriver.activities.ui.FarmListRoute.formatToMMDDYYYY(sharedPref.date))
+                        if (farm != null && !farm.rideId.startsWith("OFF_") && farm.rideId != "0" && farm.rideId.isNotEmpty()) {
                             rideId = farm.rideId; json.addProperty("rideId", rideId)
                         }
                     }
+                    if (rideId == "0" || rideId.isEmpty()) {
+                        Log.w("SyncWorker", "Skipping email sync for firm $firmId: rideId is 0 or empty")
+                        continue
+                    }
+                    val key = "$firmId-$rideId"
                     if (processedKeys.contains(key)) {
                         db.rideSyncDao().deleteById(entity.id); continue
                     }
@@ -238,10 +262,12 @@ class SyncWorker(
                                 } catch (e: Exception) {}
                             }
                         }
-                        if (firmId.isNotEmpty()) db.improvedPriorityFarmDao().updateEmailSent(firmId.toInt(), com.sc.aipdriver.activities.ui.FarmListRoute.formatToMMDDYYYY(sharedPref.date), 1)
-                    } else return Result.retry()
+                        if (firmId.isNotEmpty()) db.improvedPriorityFarmDao().updateEmailSent(firmId.toIntOrNull() ?: 0, com.sc.aipdriver.activities.ui.FarmListRoute.formatToMMDDYYYY(sharedPref.date), 1)
+                    } else {
+                        Log.e("SyncWorker", "rideFinishEmail failed with code ${res.code()} for firm $firmId")
+                    }
                 } catch (e: Exception) {
-                    e.printStackTrace(); return Result.retry()
+                    e.printStackTrace()
                 }
             }
 

@@ -499,10 +499,18 @@ public class PhotoDialog extends BottomSheetDialogFragment {
         // Ensure we use the best possible rideId
         String finalRideId = rideId;
         if (finalRideId == null || finalRideId.equals("0") || finalRideId.isEmpty()) {
-            finalRideId = parentId;
+            finalRideId = sharedprefrenceManager.getRideId();
         }
         if (finalRideId == null || finalRideId.equals("0") || finalRideId.isEmpty()) {
-            finalRideId = sharedprefrenceManager.getRideId();
+            String date = formatToMMDDYYYY(orderDate);
+            if (date == null || date.isEmpty()) date = formatToMMDDYYYY(sharedprefrenceManager.getDate());
+            ImprovedPriorityFarmData farm = db.improvedPriorityFarmDao().getFarmByIdAndDate(Integer.parseInt(fId), date);
+            if (farm != null && farm.getRideId() != null && !farm.getRideId().equals("0") && !farm.getRideId().isEmpty()) {
+                finalRideId = farm.getRideId();
+            }
+        }
+        if (finalRideId == null || finalRideId.equals("0") || finalRideId.isEmpty()) {
+            finalRideId = parentId;
         }
         
         photo.rideId = finalRideId;

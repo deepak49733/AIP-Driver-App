@@ -636,14 +636,12 @@ public class LoadTemprature extends BottomSheetDialogFragment {
 
                                                       if (sharedprefrenceManager.isSyncMode()) {
                                                           showLoading.dismiss();
-                                                          success("Success", "Information is saved and will be synced.", () -> {
-                                                              // ✅ Continue UI flow immediately in Sync Mode
-                                                              if (tvSkip.getVisibility() == VISIBLE) {
-                                                                  onClickSubmit.onClickSubmit(true, liRoutePlannerDetails, comments.getText().toString().trim(), false);
-                                                              } else {
-                                                                  onClickSubmit.onClickSubmit(true, liRoutePlannerDetails, comments.getText().toString().trim(), true);
-                                                              }
-                                                          });
+                                                          if (tvSkip.getVisibility() == VISIBLE) {
+                                                              onClickSubmit.onClickSubmit(true, liRoutePlannerDetails, comments.getText().toString().trim(), false);
+                                                          } else {
+                                                              onClickSubmit.onClickSubmit(true, liRoutePlannerDetails, comments.getText().toString().trim(), true);
+                                                          }
+                                                          success("Success", "Information is saved and will be synced.", null);
                                                       } else {
                                                           Call<CommonError> call = apiService.sendTempBags(tempBagsArrayList, sharedprefrenceManager.getDriverID(), sharedprefrenceManager.getToken());
                                                           call.enqueue(new Callback<CommonError>() {
@@ -880,7 +878,20 @@ public class LoadTemprature extends BottomSheetDialogFragment {
         photo.imagePath = path;
         photo.apiType = "FARM_END"; // Assuming these are receipt/delivery photos
         photo.farmId = fId;
-        photo.rideId = sharedprefrenceManager.getRideId();
+
+        String finalRideId = sharedprefrenceManager.getRideId();
+        if (finalRideId == null || finalRideId.equals("0") || finalRideId.isEmpty()) {
+            String formattedDate = formatToMMDDYYYY(this.orderDate);
+            if (formattedDate == null || formattedDate.isEmpty()) {
+                formattedDate = formatToMMDDYYYY(sharedprefrenceManager.getDate());
+            }
+            ImprovedPriorityFarmData farm = db.improvedPriorityFarmDao().getFarmByIdAndDate(Integer.parseInt(fId), formattedDate);
+            if (farm != null && farm.getRideId() != null && !farm.getRideId().equals("0") && !farm.getRideId().isEmpty()) {
+                finalRideId = farm.getRideId();
+            }
+        }
+
+        photo.rideId = finalRideId;
         photo.driverId = sharedprefrenceManager.getDriverID();
         photo.Token = sharedprefrenceManager.getToken();
         photo.imageIndex = index;
@@ -1021,6 +1032,8 @@ public class LoadTemprature extends BottomSheetDialogFragment {
                 if (imgPath2.length() > 2) queuePhoto(db, imgPath2, 2);
                 if (imgPath3.length() > 2) queuePhoto(db, imgPath3, 3);
                 if (imgPath4.length() > 2) queuePhoto(db, imgPath4, 4);
+
+                SyncScheduler.INSTANCE.runImmediateSync(activity);
 
                 activity.runOnUiThread(() -> {
                     if (tvSkip.getVisibility() == VISIBLE) {

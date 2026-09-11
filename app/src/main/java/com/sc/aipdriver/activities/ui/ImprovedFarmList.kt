@@ -621,9 +621,20 @@ class ImprovedFarmList : AppCompatActivity(), OnImprovedItemClick, OnClickImprov
             Log.e("GEOCODER_ERROR", e.message ?: "Geocoder failed")
         }
 
+        var rideIdToUse = this@ImprovedFarmList.rideId
+        if (rideIdToUse.isNullOrEmpty() || rideIdToUse == "0") {
+            val prefRideId = sharedprefrenceManager?.rideId
+            if (!prefRideId.isNullOrEmpty() && prefRideId != "0") {
+                rideIdToUse = prefRideId
+            }
+        }
+        if (rideIdToUse.isNullOrEmpty()) {
+            rideIdToUse = "0"
+        }
+
         val rideFinishRequest = RideFinishRequest().apply {
             action = "End"
-            rideId = this@ImprovedFarmList.rideId
+            rideId = rideIdToUse
             uid = sharedprefrenceManager?.driverID
             lat = latitude ?: "0.0"
             lng = longitude ?: "0.0"
@@ -1389,10 +1400,18 @@ class ImprovedFarmList : AppCompatActivity(), OnImprovedItemClick, OnClickImprov
     private fun sendActualMail(farmId: String, routeId: String?, rideId: String?, emailKey: String) {
         Log.d("Sendingmail__", "Sending mail for $emailKey")
 
+        var finalRideId = rideId
+        if (finalRideId.isNullOrEmpty() || finalRideId == "0") {
+            val prefRideId = sharedprefrenceManager?.rideId
+            if (!prefRideId.isNullOrEmpty() && prefRideId != "0") {
+                finalRideId = prefRideId
+            }
+        }
+
         val request = JsonObject().apply {
             addProperty("ParentId", sharedprefrenceManager!!.getParentId())
             addProperty("FIRMID", farmId)
-            addProperty("rideId", rideId ?: "")
+            addProperty("rideId", finalRideId ?: "")
             addProperty("RouteId", routeId)
         }
         
@@ -1555,13 +1574,28 @@ class ImprovedFarmList : AppCompatActivity(), OnImprovedItemClick, OnClickImprov
         rideStatus = "End"
         farmIdd = model!!.id
         farmnamee = model.farmName
-        rideId = model.rideId
-        if (rideId == "") {
-            rideId = "0"
+
+        var actualRideId = model.rideId
+        if (actualRideId.isNullOrEmpty() || actualRideId == "0") {
+            val prefRideId = sharedprefrenceManager?.rideId
+            if (!prefRideId.isNullOrEmpty() && prefRideId != "0") {
+                actualRideId = prefRideId
+            }
         }
+        if (actualRideId.isNullOrEmpty()) {
+            actualRideId = "0"
+        }
+        rideId = actualRideId
+        model.rideId = actualRideId
         rideIdd = if (rideId.startsWith("OFF_")) 0 else rideId.toIntOrNull() ?: 0
 
         sharedprefrenceManager!!.setRideIdString(rideId)
+
+        Executors.newSingleThreadExecutor().execute {
+            val db = AppDatabase.getDatabase(this@ImprovedFarmList)
+            db.improvedPriorityFarmDao().updateRideId(model.id, FarmListRoute.formatToMMDDYYYY(model.orderDate), rideId)
+        }
+
         bottomSheetDialogFragment = null
         bottomSheetDialogFragment =
             LoadTemprature().instance(
@@ -1675,6 +1709,11 @@ class ImprovedFarmList : AppCompatActivity(), OnImprovedItemClick, OnClickImprov
                         rideId = "0"
                     }
                     sharedprefrenceManager!!.setRideIdString(rideId)
+                    model.rideId = rideId
+                    Executors.newSingleThreadExecutor().execute {
+                        val db = AppDatabase.getDatabase(this@ImprovedFarmList)
+                        db.improvedPriorityFarmDao().updateRideId(model.id, FarmListRoute.formatToMMDDYYYY(model.orderDate), rideId)
+                    }
                     sendLog(logStatus)
                     if (!isResumeRide)
                         sendRideStatus(1, rideStatus)

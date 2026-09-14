@@ -388,7 +388,8 @@ class ImprovedFarmList : AppCompatActivity(), OnImprovedItemClick, OnClickImprov
                 }
             } else {
                 runOnUiThread {
-                    ivRefresh!!.visibility = VISIBLE
+                   // ivRefresh!!.visibility = VISIBLE
+                    ivRefresh!!.visibility=GONE
                     hideSyncDialog()
                 }
             }

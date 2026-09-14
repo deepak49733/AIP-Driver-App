@@ -60,7 +60,7 @@ class AppController : Application(), Application.ActivityLifecycleCallbacks {
             override fun run() {
                 Log.d("GlobalStatus", "Timer triggered: Running checkGlobalRouteStatus")
                 checkGlobalRouteStatus()
-                handler?.postDelayed(this, 30000) // 1/2 minute
+                handler?.postDelayed(this, 500) // 5 sec
             }
         }
         handler?.post(statusCheckRunnable!!)

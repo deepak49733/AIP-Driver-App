@@ -99,66 +99,53 @@ public class FarmListAdapterByRote extends RecyclerView.Adapter<FarmListAdapterB
             if (farmData.getIsCompleted()==1){
                 holder.llRoot.setBackgroundColor(ContextCompat.getColor(activity, R.color.green));
                 holder.imgView.setText("Delivered");
+                holder.title.setOnClickListener(null);
+                holder.imgView.setOnClickListener(null);
             }else  if (farmData.getIsLoaded()==1){
                 holder.llRoot.setBackgroundColor(ContextCompat.getColor(activity, R.color.green));
                 holder.imgView.setText("Loaded");
+                holder.title.setOnClickListener(null);
+                holder.imgView.setOnClickListener(null);
             }
             else{
-                    holder.llRoot.setBackgroundColor(ContextCompat.getColor(activity, R.color.orange));
-                  //  holder.title.setBackgroundColor(ContextCompat.getColor(activity, R.color.orange));
-                    holder.title.setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View view) {
+                holder.llRoot.setBackgroundColor(ContextCompat.getColor(activity, R.color.orange));
+                holder.imgView.setText("Load");
+                holder.title.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
 
-                            int shouldStart=areAllItemsLoaded(farmDataList);
-                            holder.title.setEnabled(false);
-                            Log.d("Analysis__","Should Start is "+shouldStart);
-                            onItemClick.onItemClick(farmData);
+                        int shouldStart=areAllItemsLoaded(farmDataList);
+                        holder.title.setEnabled(false);
+                        Log.d("Analysis__","Should Start is "+shouldStart);
+                        onItemClick.onItemClick(farmData);
 //                            onClickFarm.onFarmClick(farmData,shouldStart,routeName);
-                            // new LoadTemprature(activity, FarmListAdapterByRote.this, ""+farmData.getId(), routeName).createDialog();
-                            holder.title.postDelayed(new Runnable() {
-                                @Override
-                                public void run() {
-                                    holder.title.setEnabled(true);
-                                }
-                            }, 1000); // 1 second
-                        }
-                    });
-                    holder.imgView.setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View view) {
+                        // new LoadTemprature(activity, FarmListAdapterByRote.this, ""+farmData.getId(), routeName).createDialog();
+                        holder.title.postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                holder.title.setEnabled(true);
+                            }
+                        }, 1000); // 1 second
+                    }
+                });
+                holder.imgView.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
 
-                            int shouldStart=areAllItemsLoaded(farmDataList);
-                            holder.title.setEnabled(false);
-                            Log.d("Analysis__","Should Start is "+shouldStart);
-                            onItemClick.onItemClick(farmData);
+                        int shouldStart=areAllItemsLoaded(farmDataList);
+                        holder.title.setEnabled(false);
+                        Log.d("Analysis__","Should Start is "+shouldStart);
+                        onItemClick.onItemClick(farmData);
 //                            onClickFarm.onFarmClick(farmData,shouldStart,routeName);
-                            // new LoadTemprature(activity, FarmListAdapterByRote.this, ""+farmData.getId(), routeName).createDialog();
-                            holder.title.postDelayed(new Runnable() {
-                                @Override
-                                public void run() {
-                                    holder.title.setEnabled(true);
-                                }
-                            }, 1000); // 1 second
-                        }
-                    });
-             /*   holder.llRoot.setOnClickListener(new View.OnClickListener() {
-                                                     @Override
-                                                     public void onClick(View view) {
-                                                         holder.llRoot.setEnabled(false);
-                                                         if (farmData.getIsCompleted()!=1) {
-                                                             onItemClick.onItemClick(farmData);
-                                                         }
-                                                         holder.llRoot.postDelayed(new Runnable() {
-                                                             @Override
-                                                             public void run() {
-                                                                 holder.llRoot.setEnabled(true);
-                                                             }
-                                                         }, 1000); // 1 second delay
-
-                                                     }
-                                                 }
-                );*/
+                        // new LoadTemprature(activity, FarmListAdapterByRote.this, ""+farmData.getId(), routeName).createDialog();
+                        holder.title.postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                holder.title.setEnabled(true);
+                            }
+                        }, 1000); // 1 second
+                    }
+                });
             }
            /* if (farmData.getIsCompleted() != 0) {
                 if (farmData.getIsPhotoUploaded()==0){

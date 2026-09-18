@@ -249,9 +249,53 @@ public class LoginActivity extends AppCompatActivity {
 
 
     private void loginCheck() {
-        if (sharedprefrenceManager.getUserId()!=null && sharedprefrenceManager.getUserId().equalsIgnoreCase("0")  ) {
+        if (sharedprefrenceManager.getUserId() != null && sharedprefrenceManager.getUserId().equalsIgnoreCase("0")) {
 
-        }  else {
+        } else {
+            String lastActivityName = sharedprefrenceManager.getLastActiveActivity();
+            if (lastActivityName != null && !lastActivityName.isEmpty()) {
+                try {
+                    Class<?> clazz = Class.forName(lastActivityName);
+                    Intent intent = new Intent(LoginActivity.this, clazz);
+
+                    String farmId = sharedprefrenceManager.getLastFarmId();
+                    String routeId = sharedprefrenceManager.getLastRouteId();
+                    String orderDate = sharedprefrenceManager.getLastOrderDate();
+                    String routeName = sharedprefrenceManager.getLastRouteName();
+                    String farmName = sharedprefrenceManager.getLastFarmName();
+
+                    if (farmId != null && !farmId.isEmpty()) {
+                        intent.putExtra("FarmID", farmId);
+                        intent.putExtra("farmId", farmId);
+                        intent.putExtra("farmIdd", farmId);
+                        intent.putExtra("farmid", farmId);
+                    }
+                    if (routeId != null && !routeId.isEmpty()) {
+                        intent.putExtra("ROUTEID", routeId);
+                        intent.putExtra("routeId", routeId);
+                        intent.putExtra("routeid", routeId);
+                    }
+                    if (orderDate != null && !orderDate.isEmpty()) {
+                        intent.putExtra("orderdate", orderDate);
+                        intent.putExtra("date", orderDate);
+                    }
+                    if (routeName != null && !routeName.isEmpty()) {
+                        intent.putExtra("ROUTE", routeName);
+                        intent.putExtra("RouteName", routeName);
+                    }
+                    if (farmName != null && !farmName.isEmpty()) {
+                        intent.putExtra("FarmName", farmName);
+                        intent.putExtra("farmName", farmName);
+                    }
+
+                    startActivity(intent);
+                    finish();
+                    return;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
             startActivity(new Intent(LoginActivity.this, SelectCar.class));
             finish();
         }

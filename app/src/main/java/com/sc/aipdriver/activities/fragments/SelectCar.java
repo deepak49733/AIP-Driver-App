@@ -152,33 +152,23 @@ public class SelectCar extends AppCompatActivity {
             Intent intent;
 
             if (improvedCount > 0) {
-
-                int processedCount = improvedDao.getProcessedImprovedFarmCountByDate(improvedDate);
-
-                if (processedCount == improvedCount) {
-                    // ✅ All completed or loaded
-                    intent = new Intent(SelectCar.this, ImprovedFarmList.class);
-                } else {
-                    // ❌ Pending farms exist
-                    intent = new Intent(SelectCar.this, FarmListRoute.class);
-                }
-
+                // ✅ Always redirect to FarmListRoute first during preparation, even if all items are processed.
+                // The user should manually click "Next" to go to ImprovedFarmList.
+                intent = new Intent(SelectCar.this, FarmListRoute.class);
+                intent.putExtra("ROUTE", sharedprefrenceManager.getRouteName());
+                intent.putExtra("ROUTEID", sharedprefrenceManager.getRouteId() + "");
+                intent.putExtra("SEQUENCE", "Start");
+                intent.putExtra("date", improvedDate);
                 intent.putExtra("orderdate", improvedDate);
 
             } else if (priorityCount > 0) {
-
-                int processedCount = priorityDao.getProcessedFarmCountByDate(date);
-
-                if (processedCount == priorityCount) {
-                    // ✅ All done
-                    intent = new Intent(SelectCar.this, ImprovedFarmList.class);
-                } else {
-                    // ❌ Pending
-                    intent = new Intent(SelectCar.this, FarmListRoute.class);
-                }
-
+                // ✅ Always redirect to FarmListRoute first during preparation
+                intent = new Intent(SelectCar.this, FarmListRoute.class);
+                intent.putExtra("ROUTE", sharedprefrenceManager.getRouteName());
+                intent.putExtra("ROUTEID", sharedprefrenceManager.getRouteId() + "");
+                intent.putExtra("SEQUENCE", "Start");
+                intent.putExtra("date", date);
                 intent.putExtra("orderdate", date);
-
             } else {
                 checkInternet();
                 return;
@@ -425,12 +415,12 @@ public class SelectCar extends AppCompatActivity {
                     //Log.d("Analysis__","checkid is "+checkId);
                     if (checkId.equals("0") || checkId!=null){
                         //Log.d("Analysis__","Inside if block");
-                        Intent intent = new Intent(SelectCar.this, ImprovedFarmList.class);
-                        intent.putExtra("RouteName", routeName);
-                        intent.putExtra("ROUTEID", routeId);
+                        Intent intent = new Intent(SelectCar.this, FarmListRoute.class);
+                        intent.putExtra("ROUTE", routeName);
+                        intent.putExtra("ROUTEID", routeId + "");
                         intent.putExtra("SEQUENCE", "Start");
                         intent.putExtra("isResumed", true);
-                        intent.putExtra("orderdate", orderDate);
+                        intent.putExtra("date", orderDate);
                         sharedprefrenceManager.setRouteName(routeName);
                         startActivity(intent);
                         finish();
@@ -450,7 +440,7 @@ public class SelectCar extends AppCompatActivity {
                     dialog.dismiss();
                 }
             });
-            btnOk.performClick();
+            // btnOk.performClick();
             dialog.show();
         } catch (Exception e) {
             e.printStackTrace();
@@ -482,7 +472,7 @@ public class SelectCar extends AppCompatActivity {
                     dialog.dismiss();
                 }
             });
-            btnOk.performClick();
+            // btnOk.performClick();
             dialog.show();
         } catch (Exception e) {
             showLoading.dismiss();
@@ -713,24 +703,30 @@ public class SelectCar extends AppCompatActivity {
                             logout.setVisibility(View.VISIBLE);
                         }
                         else if (rideId == 0) {
-                            Log.d("Analysis__","Inside line 631");
+                            Log.d("Analysis__","Inside line 631 - Redirecting to FarmListRoute");
                             recyclerView.setVisibility(View.GONE);
                             logout.setVisibility(View.GONE);
                             orderDate = pData.getOrderDate();
 
-                            Intent intent = new Intent(SelectCar.this, ImprovedFarmList.class);
-                            intent.putExtra("orderdate", pData.getOrderDate());
+                            Intent intent = new Intent(SelectCar.this, FarmListRoute.class);
+                            intent.putExtra("ROUTE", routeName);
+                            intent.putExtra("ROUTEID", routeId + "");
+                            intent.putExtra("SEQUENCE", "Start");
                             intent.putExtra("isResumed", true);
+                            intent.putExtra("date", pData.getOrderDate());
                             sharedprefrenceManager.setRouteName(routeName);
                             sharedprefrenceManager.setShouldNavigateToMap(true);
                             startActivity(intent);
                             finish();
                             getStartedRide(parentId + "", action);
                         } else if (farmId == 0) {
-                            //Log.d("Analysis__","Inside line 644");
-                            Intent intent = new Intent(SelectCar.this, ImprovedFarmList.class);
-                            intent.putExtra("orderdate", pData.getOrderDate());
+                            //Log.d("Analysis__","Inside line 644 - Redirecting to FarmListRoute");
+                            Intent intent = new Intent(SelectCar.this, FarmListRoute.class);
+                            intent.putExtra("ROUTE", routeName);
+                            intent.putExtra("ROUTEID", routeId + "");
+                            intent.putExtra("SEQUENCE", "Start");
                             intent.putExtra("isResumed", true);
+                            intent.putExtra("date", pData.getOrderDate());
                             sharedprefrenceManager.setRouteName(routeName);
                             sharedprefrenceManager.setShouldNavigateToMap(true);
                             startActivity(intent);

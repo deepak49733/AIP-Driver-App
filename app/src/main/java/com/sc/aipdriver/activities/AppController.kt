@@ -19,6 +19,7 @@ import com.sc.aipdriver.activities.room.AppDatabase
 import com.sc.aipdriver.activities.ui.FarmListRoute
 import com.sc.aipdriver.activities.ui.ImprovedFarmList
 import com.sc.aipdriver.activities.ui.LoginActivity
+import com.sc.aipdriver.activities.fragments.SelectCar
 import com.sc.aipdriver.activities.worker.SyncScheduler
 import retrofit2.Call
 import retrofit2.Callback
@@ -259,6 +260,23 @@ class AppController : Application(), Application.ActivityLifecycleCallbacks {
     override fun onActivityStarted(activity: Activity) {}
     override fun onActivityResumed(activity: Activity) {
         currentActivity = activity
+        if (activity !is LoginActivity && activity !is SelectCar) {
+            sharedprefrenceManager?.setLastActiveActivity(activity.javaClass.name)
+            val extras = activity.intent?.extras
+            if (extras != null) {
+                val farmId = extras.getString("FarmID") ?: extras.getString("farmIdd") ?: extras.getString("farmId") ?: extras.getString("farmid") ?: ""
+                val routeId = extras.getString("ROUTEID") ?: extras.getString("routeId") ?: extras.getString("routeid") ?: ""
+                val orderDate = extras.getString("orderdate") ?: extras.getString("date") ?: ""
+                val routeName = extras.getString("ROUTE") ?: extras.getString("RouteName") ?: ""
+                val farmName = extras.getString("FarmName") ?: extras.getString("farmName") ?: ""
+
+                sharedprefrenceManager?.setLastFarmId(farmId)
+                sharedprefrenceManager?.setLastRouteId(routeId)
+                sharedprefrenceManager?.setLastOrderDate(orderDate)
+                sharedprefrenceManager?.setLastRouteName(routeName)
+                sharedprefrenceManager?.setLastFarmName(farmName)
+            }
+        }
     }
     override fun onActivityPaused(activity: Activity) {
         if (currentActivity == activity) {

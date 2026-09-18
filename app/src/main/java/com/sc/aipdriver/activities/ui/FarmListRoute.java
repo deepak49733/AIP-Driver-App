@@ -631,18 +631,7 @@ public class FarmListRoute extends AppCompatActivity implements OnClickSubmit, R
         return true;
     }
 
-    public boolean areAllItemsQtyAdded(List<PriorityFarmData> someList) {
-        if (!someList.isEmpty()) {
-            for (PriorityFarmData item : someList) {
-                if (item.getIsLoaded() == 0) {
-                    return false;
-                }
-            }
-            return true;
-        } else {
-            return false;
-        }
-    }
+    
 
     public boolean areAllItemsDelivered(List<PriorityFarmData> someList) {
         for (PriorityFarmData item : someList) {
@@ -1073,11 +1062,6 @@ public class FarmListRoute extends AppCompatActivity implements OnClickSubmit, R
                             Executors.newSingleThreadExecutor().execute(() -> {
                                 AppDatabase db = AppDatabase.Companion.getDatabase(FarmListRoute.this);
                                 db.improvedPriorityFarmDao().insertImprovedFarms(farms);
-
-                                if (areAllItemsLoaded(farmlist) && isResumed) {
-                                    startActivity(new Intent(FarmListRoute.this, ImprovedFarmList.class).putExtra("orderdate", tvDate.getText().toString().trim()));
-                                    finishAffinity();
-                                }
                             });
                         }
 
@@ -1822,11 +1806,6 @@ public class FarmListRoute extends AppCompatActivity implements OnClickSubmit, R
                 if (farmlist.size() > 0) {
                     tvDate.setText("Orders for " + farmlist.get(0).getOrderDate());
                 }
-
-                if (areAllItemsLoaded(farmlist) && isResumed){
-                    startActivity(new Intent(FarmListRoute.this, ImprovedFarmList.class).putExtra("orderdate", tvDate.getText().toString().trim()));
-                    finishAffinity();
-                }
 //                Toast.makeText(FarmListRoute.this,
 //                        "Showing offline data",
 //                        Toast.LENGTH_SHORT).show();
@@ -2045,15 +2024,6 @@ public class FarmListRoute extends AppCompatActivity implements OnClickSubmit, R
                 if (backPressed) {
                     handleBackPress();
                 }
-                boolean result = areAllItemsQtyAdded(farmlist);
-                Log.d("Analysis__", "checkRide result is " + result);
-                if (areAllItemsQtyAdded(farmlist)) {
-                    Log.d("DEBUG_EMAIL", "checkRide (onResponse) triggering performClick. isMailTriggering=" + isMailTriggering);
-                    if (!isFinishing() && !isMailTriggering) {
-                        next.performClick();
-                    }
-                }
-
             }
 
             @Override
@@ -2062,13 +2032,6 @@ public class FarmListRoute extends AppCompatActivity implements OnClickSubmit, R
                 resultcame = true;
                 previous = 0;
 
-
-                if (areAllItemsQtyAdded(farmlist)) {
-                    Log.d("DEBUG_EMAIL", "checkRide (onFailure) triggering performClick. isMailTriggering=" + isMailTriggering);
-                    if (!isFinishing() && !isMailTriggering) {
-                        next.performClick();
-                    }
-                }
                 handleOfflineRedirection();
 
                 //  Toast.makeText(FarmListRoute.this, t.getMessage(), Toast.LENGTH_SHORT).show();
@@ -2084,13 +2047,6 @@ public class FarmListRoute extends AppCompatActivity implements OnClickSubmit, R
             resultcame = true;
             previous = 0;
 
-
-            if (areAllItemsQtyAdded(farmlist)) {
-                Log.d("DEBUG_EMAIL", "checkRide (else/SyncMode) triggering performClick. isMailTriggering=" + isMailTriggering);
-                if (!isFinishing() && !isMailTriggering) {
-                    next.performClick();
-                }
-            }
             handleOfflineRedirection();
             return backEnabled;
         }

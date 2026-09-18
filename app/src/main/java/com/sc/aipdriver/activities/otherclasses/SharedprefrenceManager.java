@@ -48,6 +48,12 @@ public class SharedprefrenceManager {
     public static final String TimeRemaining="TimeRemaining";
     public static final String StartingCarOdometer="StartingCarOdometer";
     private static final String KEY_BG_LOCATION_GRANTED = "bg_location_granted";
+    private static final String LAST_ACTIVE_ACTIVITY = "last_active_activity";
+    private static final String LAST_FARM_ID = "last_farm_id";
+    private static final String LAST_ROUTE_ID = "last_route_id";
+    private static final String LAST_ORDER_DATE = "last_order_date";
+    private static final String LAST_ROUTE_NAME = "last_route_name";
+    private static final String LAST_FARM_NAME = "last_farm_name";
 
     private static final String RIDE_ID = "Rid";
     private static final String IMAGE2 = "img2";
@@ -452,6 +458,54 @@ public class SharedprefrenceManager {
     public boolean isDisclosureAlreadyShown() {
         return sharedPreferences
                 .getBoolean(KEY_BG_LOCATION_GRANTED, false);
+    }
+
+    public void setLastActiveActivity(String className) {
+        sharedPreferences.edit().putString(LAST_ACTIVE_ACTIVITY, className).apply();
+    }
+
+    public String getLastActiveActivity() {
+        return sharedPreferences.getString(LAST_ACTIVE_ACTIVITY, null);
+    }
+
+    public void setLastFarmId(String farmId) {
+        sharedPreferences.edit().putString(LAST_FARM_ID, farmId).apply();
+    }
+
+    public String getLastFarmId() {
+        return sharedPreferences.getString(LAST_FARM_ID, "");
+    }
+
+    public void setLastRouteId(String routeId) {
+        sharedPreferences.edit().putString(LAST_ROUTE_ID, routeId).apply();
+    }
+
+    public String getLastRouteId() {
+        return sharedPreferences.getString(LAST_ROUTE_ID, "");
+    }
+
+    public void setLastOrderDate(String date) {
+        sharedPreferences.edit().putString(LAST_ORDER_DATE, date).apply();
+    }
+
+    public String getLastOrderDate() {
+        return sharedPreferences.getString(LAST_ORDER_DATE, "");
+    }
+
+    public void setLastRouteName(String routeName) {
+        sharedPreferences.edit().putString(LAST_ROUTE_NAME, routeName).apply();
+    }
+
+    public String getLastRouteName() {
+        return sharedPreferences.getString(LAST_ROUTE_NAME, "");
+    }
+
+    public void setLastFarmName(String farmName) {
+        sharedPreferences.edit().putString(LAST_FARM_NAME, farmName).apply();
+    }
+
+    public String getLastFarmName() {
+        return sharedPreferences.getString(LAST_FARM_NAME, "");
     }
 
 }
